@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INST337 - ACTIVITIES</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <ul>
+            <li><a href="index.html" class="nav-link">Home</a></li>
+            <li><a href="stocks.html" class="nav-link">Stocks</a></li>
+            <li><a href="dogs.html" class="nav-link">Dogs</a></li>
+        </ul>
+    </nav>
+
+    <h2>Activities</h2>
+
+    <div class="quote-container">
+        <h3>Quote of the Page:</h3>
+        <p id="quote">Loading a new quote...</p>
+    </div>
+
+    <div class="navigation-buttons">
+        <button onclick="window.location.href='stocks.html'">Go to Stocks</button>
+        <button onclick="window.location.href='dogs.html'">Go to Dogs</button>
+    </div>
+
+    <div class="audio-info">
+        <h3>In this web page, there are options to navigate using Audio!</h3>
+        <p>Ensure your mic is enabled to be able to use this feature.</p>
+        <ul>
+            <li><strong>Navigate to a different page:</strong> Say: <em>Navigate to <strong>&lt;page&gt;</strong></em></li>
+            <li><strong>Change the Page Color:</strong> Say: <em>Change the color to <strong>&lt;color&gt;</strong></em></li>
+            <li><strong>Say Hello:</strong> Say: <em>Hello Bato you!</em></li>
+        </ul>
+    </div>
+
+    <div class="audio-box">
+        <h3>Audio Instructions:</h3>
+        <ul>
+            <li><strong>Hello:</strong> Says "Hello World" in an alert.</li>
+            <li><strong>Change the color to [color]:</strong> Changes the background color of the page.</li>
+            <li><strong>Navigate to [page]:</strong> Navigates to the respective page (Home, Stocks, Dogs).</li>
+            <li><strong>Lookup [stock]:</strong> Shows the chart for the given stock ticker (default 30 days).</li>
+        </ul>
+        <button id="audio-on" class="audio-toggle">Turn On Listening</button> 
+        <button id="audio-off" class="audio-toggle">Turn Off Listening</button> 
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/annyang/2.6.0/annyang.min.js"></script>
+    <script src="app.js"></script>
+
+</body>
+</html>

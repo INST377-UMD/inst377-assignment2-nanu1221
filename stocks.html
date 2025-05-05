@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Information</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    canvas {
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid black;
+      border-collapse: collapse;
+      padding: 8px;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .bullish::after {
+      content: "📈";
+    }
+    .bearish::after {
+      content: "📉";
+    }
+    .custom-btn {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      cursor: pointer;
+    }
+    .custom-btn:hover {
+      background-color: #45a049;
+    }
+    .control-btn {
+      background-color: #f1c40f;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      cursor: pointer;
+    }
+    .control-btn:hover {
+      background-color: #f39c12;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Let's chart some stocks!</h1>
+
+  <label for="stock-ticker">Enter Stock Ticker:</label>
+  <input type="text" id="stock-ticker" placeholder="e.g., AAPL">
+
+  <label for="date-range">Select Date Range:</label>
+  <select id="date-range">
+    <option value="30">30 Days</option>
+    <option value="60">60 Days</option>
+    <option value="90">90 Days</option>
+  </select>
+
+  <button id="fetch-stock" class="custom-btn">Fetch Stock Data</button>
+
+  <canvas id="myChart" width="400" height="200"></canvas>
+
+  <h2>Top 5 Stocks Discussed on Reddit</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Ticker</th>
+        <th>Comment Count</th>
+        <th>Sentiment</th>
+      </tr>
+    </thead>
+    <tbody id="reddit-stocks"></tbody>
+  </table>
+
+  <div id="voice-control-buttons">
+    <button id="turn-on" class="control-btn">Turn On Data Fetch</button>
+    <button id="turn-off" class="control-btn" disabled>Turn Off Data Fetch</button>
+  </div>
+
+  <script>
+    const apiKey = "oCRBHkPj8T701cBzXtqoEQf9KCQU8K36";
+    let isDataFetching = true; // Control if data fetching is enabled or disabled
+
+    document.getElementById("fetch-stock").addEventListener("click", async () => {
+      if (!isDataFetching) return; // Skip if data fetching is disabled
+
+      const ticker = document.getElementById("stock-ticker").value.toUpperCase();
+      const days = parseInt(document.getElementById("date-range").value);
+
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - days);
+
+      const formatDate = (date) => {
+        return date.toISOString().split("T")[0];
+      };
+
+      const url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/day/${formatDate(startDate)}/${formatDate(endDate)}?adjusted=true&sort=asc&limit=${days}&apiKey=${apiKey}`;
+
+      try {
+        const response = await axios.get(url);
+        const results = response.data.results;
+
+        const labels = results.map(item => new Date(item.t).toLocaleDateString());
+        const closePrices = results.map(item => item.c);
+
+        const ctx = document.getElementById('myChart').getContext('2d');
+        if (window.stockChart) {
+          window.stockChart.destroy();
+        }
+
+        window.stockChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: `${ticker} Closing Prices`,
+              data: closePrices,
+              borderColor: 'blue',
+              borderWidth: 2,
+              fill: false,
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: false
+              }
+            }
+          }
+        });
+
+      } catch (error) {
+        alert("Error fetching stock data. Please check the ticker symbol.");
+        console.error(error);
+      }
+    });
+
+    async function loadRedditStocks() {
+      const url = "https://tradestie.com/api/v1/apps/reddit?date=2022-04-03";
+      try {
+        const response = await axios.get(url);
+        const top5 = response.data.slice(0, 5);
+        const tbody = document.getElementById("reddit-stocks");
+        tbody.innerHTML = "";
+
+        top5.forEach(stock => {
+          const row = document.createElement("tr");
+
+          const tickerCell = document.createElement("td");
+          const link = document.createElement("a");
+          link.href = `https://finance.yahoo.com/quote/${stock.ticker}`;
+          link.target = "_blank";
+          link.textContent = stock.ticker;
+          tickerCell.appendChild(link);
+
+          const commentCell = document.createElement("td");
+          commentCell.textContent = stock.no_of_comments;
+
+          const sentimentCell = document.createElement("td");
+          const sentimentIcon = document.createElement("img");
+
+          if (stock.sentiment.toLowerCase() === "bullish") {
+              sentimentIcon.src = "https://img.icons8.com/color/48/000000/bullish.png";
+              sentimentIcon.alt = "Bullish";
+          } else if (stock.sentiment.toLowerCase() === "bearish") {
+              sentimentIcon.src = "https://img.icons8.com/color/48/000000/bearish.png";
+              sentimentIcon.alt = "Bearish";
+          } else {
+              sentimentCell.textContent = stock.sentiment; // fallback
+          }
+
+          sentimentIcon.width = 24;
+          sentimentIcon.height = 24;
+
+          if (stock.sentiment.toLowerCase() === "bullish" || stock.sentiment.toLowerCase() === "bearish") {
+              sentimentCell.appendChild(sentimentIcon);
+          }
+
+          sentimentCell.className = stock.sentiment.toLowerCase();
+          row.appendChild(tickerCell);
+          row.appendChild(commentCell);
+          row.appendChild(sentimentCell);
+          tbody.appendChild(row);
+        });
+
+      } catch (err) {
+        console.error("Error loading Reddit stocks", err);
+      }
+    }
+
+    // Load Reddit stock data on page load
+    window.onload = loadRedditStocks;
+
+    // Turn On and Turn Off Button functionality
+    document.getElementById('turn-on').addEventListener('click', () => {
+      isDataFetching = true;
+      document.getElementById('turn-on').disabled = true;
+      document.getElementById('turn-off').disabled = false;
+    });
+
+    document.getElementById('turn-off').addEventListener('click', () => {
+      isDataFetching = false;
+      document.getElementById('turn-on').disabled = false;
+      document.getElementById('turn-off').disabled = true;
+    });
+  </script>
+
+</body>
+</html>
