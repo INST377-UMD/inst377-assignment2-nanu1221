@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dog Carousel & Breeds</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/simple-slider/1.0.0/simple-slider.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        .carousel img { width: 300px; height: auto; margin: 5px; }
+        #breed-buttons button { 
+            margin: 5px; padding: 10px; background-color: #7fc8f8; 
+            border: none; color: white; cursor: pointer; border-radius: 5px; 
+        }
+        #breed-info { 
+            display: none; border: 1px solid #ccc; padding: 10px; 
+            margin-top: 20px; background: #f9f9f9; max-width: 400px; 
+            margin-left: auto; margin-right: auto; 
+        }
+        #voice-control-buttons button {
+            margin: 5px; padding: 10px; background-color: #f1c40f;
+            border: none; color: white; cursor: pointer; border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dog Gallery</h1>
+    <div id="dog-carousel" class="carousel"></div>
+
+    <h2>Dog Breeds</h2>
+    <div id="breed-buttons"></div>
+
+    <div id="breed-info">
+        <h3 id="breed-name"></h3>
+        <p id="breed-description"></p>
+        <p><strong>Min Life Span:</strong> <span id="breed-min-lifespan"></span></p>
+        <p><strong>Max Life Span:</strong> <span id="breed-max-lifespan"></span></p>
+    </div>
+
+    <div id="voice-control-buttons">
+        <button id="turn-on">Turn On Voice Commands</button>
+        <button id="turn-off">Turn Off Voice Commands</button>
+    </div>
+
+    <script src="https://cdn.rawgit.com/TalAter/annyang/master/annyang.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-slider/1.0.0/simple-slider.min.js"></script>
+    <script>
+        let annyangStarted = false;
+
+        async function loadCarousel() {
+            const res = await fetch('https://dog.ceo/api/breeds/image/random/10');
+            const data = await res.json();
+            const carousel = document.getElementById('dog-carousel');
+            carousel.innerHTML = '';
+
+            data.message.forEach(img => {
+                const imgEl = document.createElement('img');
+                imgEl.src = img;
+                imgEl.onerror = () => imgEl.src = 'default-dog-image.jpg';
+                carousel.appendChild(imgEl);
+            });
+
+            simpleSlider(carousel, { autoPlay: true, interval: 2000 });
+        }
+
+        async function loadBreedButtons() {
+            const res = await fetch('https://api.thedogapi.com/v1/breeds');
+            const breeds = await res.json();
+            const buttonContainer = document.getElementById('breed-buttons');
+
+            breeds.slice(0, 10).forEach(breed => {
+                const btn = document.createElement('button');
+                btn.textContent = breed.name;
+                btn.setAttribute('data-id', breed.id);
+                btn.addEventListener('click', () => showBreedInfo(breed));
+                buttonContainer.appendChild(btn);
+            });
+
+            if (annyang) {
+                const commands = {
+                    'load dog breed *breed': function(breedSpoken) {
+                        const match = breeds.find(b => b.name.toLowerCase() === breedSpoken.toLowerCase());
+                        if (match) showBreedInfo(match);
+                    }
+                };
+                annyang.addCommands(commands);
+            }
+        }
+
+        function showBreedInfo(breed) {
+            document.getElementById('breed-info').style.display = 'block';
+            document.getElementById('breed-name').textContent = breed.name;
+            document.getElementById('breed-description').textContent = breed.temperament || 'No description available';
+            document.getElementById('breed-min-lifespan').textContent = breed.life_span.split(' - ')[0] || 'Not Available';
+            document.getElementById('breed-max-lifespan').textContent = breed.life_span.split(' - ')[1] || 'Not Available';
+        }
+
+        function turnOnVoiceCommands() {
+            if (annyang && !annyangStarted) {
+                annyang.start();
+                annyangStarted = true;
+                document.getElementById('turn-on').disabled = true;
+                document.getElementById('turn-off').disabled = false;
+            }
+        }
+
+        function turnOffVoiceCommands() {
+            if (annyang && annyangStarted) {
+                annyang.abort();
+                annyangStarted = false;
+                document.getElementById('turn-on').disabled = false;
+                document.getElementById('turn-off').disabled = true;
+            }
+        }
+
+        document.getElementById('turn-on').addEventListener('click', turnOnVoiceCommands);
+        document.getElementById('turn-off').addEventListener('click', turnOffVoiceCommands);
+
+        loadCarousel();
+        loadBreedButtons();
+    </script>
+</body>
+</html>
